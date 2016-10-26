@@ -28,16 +28,14 @@ module OnTheFlyCalc
           end
           @respective_scores = {}
           @respective_scores = @review_scores[response_map.reviewer_id][round] if !@review_scores[response_map.reviewer_id].nil? && !@review_scores[response_map.reviewer_id][round].nil?
-
           if !@corresponding_response.empty?
             @this_review_score_raw = Answer.get_total_score(response: @corresponding_response, questions: @questions)
             if @this_review_score_raw
-              @this_review_score = ((@this_review_score_raw * 100) / 100.0).round if @this_review_score_raw >= 0.0
+              @this_review_score_raw = float_review_score(@this_review_score_raw)
             end
           else
             @this_review_score = -1.0
           end
-
           @respective_scores[response_map.reviewee_id] = @this_review_score
           @review_scores[response_map.reviewer_id] = {} if @review_scores[response_map.reviewer_id].nil?
           @review_scores[response_map.reviewer_id][round] = {} if @review_scores[response_map.reviewer_id][round].nil?
@@ -54,11 +52,10 @@ module OnTheFlyCalc
         @corresponding_response = Response.where(['map_id = ?', response_map.id])
         @respective_scores = {}
         @respective_scores = @review_scores[response_map.reviewer_id] unless @review_scores[response_map.reviewer_id].nil?
-
         if !@corresponding_response.empty?
           @this_review_score_raw = Answer.get_total_score(response: @corresponding_response, questions: @questions)
           if @this_review_score_raw
-            @this_review_score = ((@this_review_score_raw * 100) / 100.0).round if @this_review_score_raw >= 0.0
+            @this_review_score_raw = float_review_score(@this_review_score_raw)
           end
         else
           @this_review_score = -1.0
@@ -71,7 +68,14 @@ module OnTheFlyCalc
     @review_scores
   end
 
-  # calculate the avg score and score range for each reviewee(team), only for peer-review
+  def float_review_score(review_score_raw)
+    if review_score_raw >= 0.0
+      review_score_raw = ((review_score_raw * 100) / 100.0).round
+      return review_score_raw
+    end
+  end
+
+    # calculate the avg score and score range for each reviewee(team), only for peer-review
   def compute_avg_and_ranges_hash
     scores = {}
     contributors = self.contributors # assignment_teams
